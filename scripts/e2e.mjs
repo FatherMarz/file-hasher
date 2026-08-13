@@ -81,9 +81,13 @@ const row = await openRow("alpha.txt");
 const shown = await row.locator(".font-mono").evaluateAll((els) =>
   els.map((el) => el.getAttribute("title")),
 );
-for (const key of ["sha256", "sha1", "sha384", "sha512", "md5"]) {
+for (const key of ["sha256", "sha384", "sha512", "sha1", "md5"]) {
   check(`${key} matches node:crypto`, shown.includes(M["alpha.txt"][key]));
 }
+check(
+  "the weak two sit last, SHA-1 above MD5",
+  shown.slice(-2).join(" ") === `${M["alpha.txt"].sha1} ${M["alpha.txt"].md5}`,
+);
 await row.locator("div").first().click();
 
 // --- verification against a single pasted hash ---------------------------
@@ -155,7 +159,7 @@ check(
 const csv = await grab(() => page.click('button:has-text(".csv")'));
 check(
   "the .csv export has a column per algorithm",
-  csv.split("\n")[0] === "path,size_bytes,sha256,sha1,sha384,sha512,md5,expected,result",
+  csv.split("\n")[0] === "path,size_bytes,sha256,sha384,sha512,sha1,md5,expected,result",
   csv.split("\n")[0],
 );
 
