@@ -55,9 +55,10 @@ const ITEMS: { q: string; a: React.ReactNode }[] = [
     q: "Why do you mark MD5 and SHA-1 as weak?",
     a: (
       <>
-        A skilled attacker can build two different files that share one MD5 or SHA-1
-        hash. Use them to catch a damaged download. Do not use them to prove a file is
-        safe.
+        Their fingerprints can be faked. Somebody can build a harmful file that carries
+        the same MD5 or SHA-1 as a safe one, so a match proves nothing on its own. They
+        still catch a download that broke on the way. Trust SHA-256 for anything that
+        matters.
       </>
     ),
   },
