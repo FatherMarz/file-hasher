@@ -5,9 +5,8 @@ const ITEMS: { q: string; a: React.ReactNode }[] = [
     q: "What is a hash?",
     a: (
       <>
-        A hash is a short string of letters and numbers that a file produces. Change one
-        byte of the file and the hash changes completely. Two files with the same hash
-        hold the same bytes.
+        A hash is a fingerprint of a file. The same file always produces the same
+        fingerprint. Change one byte and you get a completely different one.
       </>
     ),
   },
