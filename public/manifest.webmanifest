@@ -1,0 +1,17 @@
+{
+  "name": "File Hasher",
+  "short_name": "File Hasher",
+  "description": "Checksum files in your browser. SHA-256, SHA-1, SHA-384, SHA-512 and MD5, with verification against a pasted hash. No upload.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#242721",
+  "theme_color": "#242721",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

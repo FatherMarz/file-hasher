@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <title>File Hasher — SHA-256 and MD5 checksums in your browser</title>
+    <meta
+      name="description"
+      content="Drop a file and get its SHA-256, SHA-1, SHA-384, SHA-512 or MD5 checksum. Paste an expected hash and it tells you if the file matches. Everything runs in your browser. No upload, no server, no size limit."
+    />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="canonical" href="https://hash.modul4r.com/" />
+    <meta name="author" content="Modul4r" />
+    <meta name="theme-color" content="#242721" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f7f6f1" media="(prefers-color-scheme: light)" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://hash.modul4r.com/" />
+    <meta property="og:title" content="File Hasher — checksums in your browser" />
+    <meta
+      property="og:description"
+      content="Drop a file, get its checksum, and check it against the hash the publisher gave you. Nothing leaves your computer."
+    />
+    <meta property="og:site_name" content="File Hasher — a Modul4r tool" />
+
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="File Hasher — checksums in your browser" />
+    <meta
+      name="twitter:description"
+      content="Drop a file, get its checksum, and check it against the hash the publisher gave you. Nothing leaves your computer."
+    />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "File Hasher",
+        "url": "https://hash.modul4r.com/",
+        "applicationCategory": "SecurityApplication",
+        "operatingSystem": "Any",
+        "description": "Local, in-browser file checksum tool. SHA-256, SHA-1, SHA-384, SHA-512 and MD5, with verification against a pasted hash or checksum list. No upload, no server.",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "publisher": {
+          "@type": "Organization",
+          "name": "Modul4r",
+          "url": "https://modul4r.com"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>
+      File Hasher checksums files inside your browser and needs JavaScript. More tools at
+      <a href="https://modul4r.com">modul4r.com</a>.
+    </noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
