@@ -64,8 +64,9 @@ for (const rel of files) {
     size: fs.statSync(path.join(DIR, rel)).size,
     sha256: await digest(rel, "sha256"),
     sha1: await digest(rel, "sha1"),
-    md5: await digest(rel, "md5"),
+    sha384: await digest(rel, "sha384"),
     sha512: await digest(rel, "sha512"),
+    md5: await digest(rel, "md5"),
   };
 }
 

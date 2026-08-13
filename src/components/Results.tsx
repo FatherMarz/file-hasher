@@ -1,8 +1,8 @@
-import { useState } from "react";
-import { formatBytes, formatRate, shortHash } from "../lib/format";
-import { copy } from "../lib/export";
+import { ALGOS, ALGO_META, DEFAULT_ALGO } from "../lib/algorithms";
 import type { Row } from "../lib/export";
+import { formatBytes } from "../lib/format";
 import { useHashStore } from "../stores/hashStore";
+import { CopyIcon } from "./CopyIcon";
 
 const MARK: Record<string, { glyph: string; className: string; label: string }> = {
   match: { glyph: "✓", className: "text-ok", label: "Matches the expected hash" },
@@ -10,122 +10,161 @@ const MARK: Record<string, { glyph: string; className: string; label: string }> 
   none: { glyph: "·", className: "text-text-muted", label: "Nothing to compare" },
 };
 
-function CopyButton({ hash }: { hash: string }) {
-  const [hit, setHit] = useState(false);
-  return (
-    <button
-      className="btn shrink-0 px-2 py-1 text-xs"
-      onClick={async () => {
-        if (await copy(hash)) {
-          setHit(true);
-          setTimeout(() => setHit(false), 1200);
-        }
-      }}
-    >
-      {hit ? "copied" : "copy"}
-    </button>
-  );
-}
+/** Every row is this tall, open or closed, so the list never jumps. */
+const LINE = "flex h-9 items-center gap-2 px-3";
 
-function ResultRow({ row, duplicate }: { row: Row; duplicate: boolean }) {
+function Line({ row }: { row: Row }) {
+  const toggleOpen = useHashStore((s) => s.toggleOpen);
+  const open = useHashStore((s) => s.openIds.has(row.entry.id));
   const cancel = useHashStore((s) => s.cancel);
   const remove = useHashStore((s) => s.remove);
+
   const e = row.entry;
   const mark = MARK[row.state];
+  const running = e.status === "queued" || e.status === "hashing";
   const pct = e.size > 0 ? Math.round((e.bytesRead / e.size) * 100) : 100;
+  const hash = e.hashes?.[DEFAULT_ALGO] ?? null;
 
   return (
-    <li className="flex items-start gap-3 border-b border-border px-3 py-2 last:border-b-0">
+    <div
+      className={`${LINE} ${e.hashes ? "cursor-pointer" : ""} hover:bg-surface-alt/60`}
+      onClick={() => e.hashes && toggleOpen(e.id)}
+    >
       <span
-        className={`mt-0.5 w-4 shrink-0 text-center ${mark.className}`}
+        className={`w-3 shrink-0 text-center ${mark.className}`}
         title={mark.label}
         aria-label={mark.label}
       >
-        {e.status === "done" ? mark.glyph : "⋯"}
+        {e.status === "done" ? mark.glyph : "·"}
       </span>
 
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-baseline gap-x-2">
-          <span className="break-all text-sm">{e.path}</span>
-          <span className="text-xs text-text-muted">{formatBytes(e.size)}</span>
-          {duplicate && (
-            <span className="rounded border border-border px-1 text-xs text-text-muted">
-              duplicate
+      <span className="w-4 shrink-0 text-center text-xs text-text-muted">
+        {e.hashes ? (open ? "▾" : "▸") : ""}
+      </span>
+
+      <span className="min-w-0 flex-1 truncate text-sm" title={e.path}>
+        {e.path}
+      </span>
+      <CopyIcon value={e.path} label="file name" />
+
+      <span className="w-16 shrink-0 text-right text-xs tabular-nums text-text-muted">
+        {formatBytes(e.size)}
+      </span>
+
+      {running ? (
+        <>
+          <span className="hidden w-40 shrink-0 sm:block">
+            <span className="block h-1 overflow-hidden rounded bg-surface-alt">
+              <span className="block h-full bg-accent" style={{ width: `${pct}%` }} />
             </span>
-          )}
-        </div>
-
-        {e.status === "done" && e.hash && (
-          <div className="mt-0.5 flex flex-wrap items-baseline gap-x-2">
-            <span className="break-all font-mono text-xs text-text-muted">{e.hash}</span>
-            {e.ms > 250 && (
-              <span className="text-xs text-text-muted">
-                {formatRate(e.size, e.ms)}
-              </span>
-            )}
-          </div>
-        )}
-
-        {row.state === "mismatch" && row.want && (
-          <div className="mt-0.5 break-all font-mono text-xs text-bad">
-            expected {shortHash(row.want)}
-          </div>
-        )}
-
-        {(e.status === "queued" || e.status === "hashing") && (
-          <div className="mt-1 flex items-center gap-2">
-            <div
-              className="h-1 w-full max-w-xs overflow-hidden rounded bg-surface-alt"
-              role="progressbar"
-              aria-valuenow={pct}
-            >
-              <div className="h-full bg-accent" style={{ width: `${pct}%` }} />
-            </div>
-            <span className="text-xs tabular-nums text-text-muted">{pct}%</span>
-          </div>
-        )}
-
-        {e.status === "cancelled" && (
-          <div className="mt-0.5 text-xs text-text-muted">Cancelled.</div>
-        )}
-
-        {e.status === "error" && (
-          <div className="mt-0.5 text-xs text-bad">{e.error}</div>
-        )}
-      </div>
-
-      {e.status === "hashing" || e.status === "queued" ? (
-        <button className="btn shrink-0 px-2 py-1 text-xs" onClick={() => cancel(e.id)}>
-          cancel
-        </button>
-      ) : e.hash ? (
-        <CopyButton hash={e.hash} />
+          </span>
+          <span className="w-9 shrink-0 text-right text-xs tabular-nums text-text-muted">
+            {pct}%
+          </span>
+          <button
+            className="btn shrink-0 px-1.5 py-0.5 text-xs"
+            onClick={(ev) => {
+              ev.stopPropagation();
+              cancel(e.id);
+            }}
+          >
+            stop
+          </button>
+        </>
+      ) : hash ? (
+        <>
+          <span
+            className="hidden w-52 shrink-0 truncate font-mono text-xs text-text-muted sm:block"
+            title={hash}
+          >
+            {hash}
+          </span>
+          <CopyIcon value={hash} label="SHA-256" />
+        </>
       ) : (
-        <button className="btn shrink-0 px-2 py-1 text-xs" onClick={() => remove(e.id)}>
-          remove
-        </button>
+        <>
+          <span className="min-w-0 flex-1 truncate text-xs text-text-muted">
+            {e.status === "cancelled" ? "Cancelled." : e.error}
+          </span>
+          <button
+            className="btn shrink-0 px-1.5 py-0.5 text-xs"
+            onClick={(ev) => {
+              ev.stopPropagation();
+              remove(e.id);
+            }}
+          >
+            remove
+          </button>
+        </>
       )}
-    </li>
+    </div>
   );
 }
 
-export function Results({
-  rows,
-  duplicates,
-}: {
-  rows: Row[];
-  duplicates: Set<string>;
-}) {
-  if (rows.length === 0) return null;
+function Detail({ row }: { row: Row }) {
+  const e = row.entry;
+  if (!e.hashes) return null;
+
   return (
-    <ul className="card divide-border">
-      {rows.map((row) => (
-        <ResultRow
-          key={row.entry.id}
-          row={row}
-          duplicate={!!row.entry.hash && duplicates.has(row.entry.hash)}
-        />
-      ))}
-    </ul>
+    <div className="border-t border-border/60 bg-bg/40 py-1">
+      {ALGOS.map((algo) => {
+        const value = e.hashes![algo];
+        const hit = row.want === value;
+        return (
+          <div key={algo} className={LINE}>
+            <span className="w-3 shrink-0" />
+            <span className="w-4 shrink-0" />
+            <span className="w-20 shrink-0 text-xs text-text-muted">
+              {ALGO_META[algo].label}
+            </span>
+            <span
+              className={`min-w-0 flex-1 truncate font-mono text-xs ${
+                hit ? "text-ok" : "text-text"
+              }`}
+              title={value}
+            >
+              {value}
+            </span>
+            {ALGO_META[algo].weak && (
+              <span className="shrink-0 text-xs text-text-muted">weak</span>
+            )}
+            <CopyIcon value={value} label={ALGO_META[algo].label} />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+export function Results({ rows, duplicates }: { rows: Row[]; duplicates: Set<string> }) {
+  const open = useHashStore((s) => s.openIds);
+
+  return (
+    <section
+      className="card h-[22rem] overflow-y-auto"
+      aria-label="Results"
+    >
+      {rows.length === 0 ? (
+        <p className="flex h-full items-center justify-center text-sm text-text-muted">
+          Results show up here.
+        </p>
+      ) : (
+        <ul className="divide-y divide-border">
+          {rows.map((row) => (
+            <li key={row.entry.id}>
+              <Line row={row} />
+              {duplicates.has(row.entry.hashes?.sha256 ?? "") && (
+                <div className={`${LINE} border-t border-border/60 text-xs text-text-muted`}>
+                  <span className="w-3 shrink-0" />
+                  <span className="w-4 shrink-0" />
+                  <span>Another file in this list holds the same bytes.</span>
+                </div>
+              )}
+              {open.has(row.entry.id) && <Detail row={row} />}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }

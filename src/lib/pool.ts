@@ -1,14 +1,13 @@
-import type { Algo } from "./algorithms";
-import type { WorkerRequest, WorkerResponse } from "./protocol";
+import type { Digests, WorkerRequest, WorkerResponse } from "./protocol";
 
 export type PoolHandlers = {
   onProgress: (id: string, bytesRead: number) => void;
-  onDone: (id: string, hash: string, ms: number) => void;
+  onDone: (id: string, hashes: Digests, ms: number) => void;
   onCancelled: (id: string) => void;
   onError: (id: string, message: string) => void;
 };
 
-type Job = { id: string; file: File; algo: Algo };
+type Job = { id: string; file: File };
 
 /**
  * One worker per core, minus one so the UI thread keeps a core to itself. Each worker
@@ -79,7 +78,7 @@ export class HashPool {
       const w = this.idle.pop()!;
       const job = this.queue.shift()!;
       this.busy.set(w, job.id);
-      this.send(w, { type: "hash", id: job.id, file: job.file, algo: job.algo });
+      this.send(w, { type: "hash", id: job.id, file: job.file });
     }
   }
 
@@ -96,7 +95,7 @@ export class HashPool {
         return;
       case "done":
         this.release(w);
-        this.handlers.onDone(msg.id, msg.hash, msg.ms);
+        this.handlers.onDone(msg.id, msg.hashes, msg.ms);
         return;
       case "cancelled":
         this.release(w);

@@ -11,12 +11,12 @@ network tab.
 
 ## What it does
 
-- Hashes with SHA-256, SHA-1, SHA-384, SHA-512 or MD5, one algorithm at a time.
+- Hashes with SHA-256, SHA-1, SHA-384, SHA-512 and MD5 at once, from one read of the file.
+- Shows SHA-256 on the row. Open a row for the other four.
 - Takes files or whole folders, by drop or by picker.
 - Checks results against a single pasted hash, or against a full `SHA256SUMS` list.
-  Both the GNU format and the BSD `--tag` format parse.
-- Reads the algorithm from the length of a pasted hash and switches to match.
-- Tags files that share a hash as duplicates.
+  Both the GNU format and the BSD `--tag` format parse. Any algorithm matches.
+- Says when two files hold the same bytes.
 - Exports as `sha256sum` text, CSV, or JSON.
 - Works offline after the first visit.
 
@@ -25,8 +25,9 @@ network tab.
 `hash-wasm` does the hashing. WebCrypto cannot hash a stream, so a 5 GB file would
 have to sit in memory in one piece before `crypto.subtle.digest` could touch it.
 
-Each file is read in 8 MiB slices and fed to an incremental hasher inside a worker. One
-worker runs per core, minus one for the UI. A cancel lands between slices.
+Each file is read in 8 MiB slices inside a worker. Every slice feeds all five hashers
+before the next one is read, so a file is pulled off disk exactly once. One worker runs
+per core, minus one for the UI. A cancel lands between slices.
 
 ## Develop
 

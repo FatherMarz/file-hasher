@@ -33,19 +33,36 @@ page.on("request", (r) => requests.push({ url: r.url(), method: r.method() }));
 
 await page.goto(BASE, { waitUntil: "networkidle" });
 
-const drop = (...names) =>
-  page.setInputFiles('input[type="file"]', names.map((n) => fx(...n.split("/"))));
+const toFiles = () => page.click('button[role="tab"]:has-text("Files")');
+const toExpected = () => page.click('button[role="tab"]:has-text("Expected hash")');
+
+const drop = async (...names) => {
+  await toFiles();
+  await page.setInputFiles(
+    'input[type="file"]',
+    names.map((n) => fx(...n.split("/"))),
+  );
+};
 
 const rowFor = (name) =>
   page.locator("li").filter({ has: page.locator(`text="${name}"`) }).first();
 
+/** The closed row shows SHA-256. Opening it lists all five. */
 const hashOf = async (name) => {
   const row = rowFor(name);
-  await row.locator(".font-mono").first().waitFor({ timeout: 120000 });
-  return (await row.locator(".font-mono").first().innerText()).trim();
+  await row.locator(".font-mono").first().waitFor({ timeout: 180000 });
+  return (await row.locator(".font-mono").first().getAttribute("title")) ?? "";
+};
+
+const openRow = async (name) => {
+  const row = rowFor(name);
+  if ((await row.locator(".font-mono").count()) < 2) await row.locator("div").first().click();
+  await page.waitForTimeout(120);
+  return row;
 };
 
 const setExpected = async (text) => {
+  await toExpected();
   await page.fill("#expected", text);
   await page.waitForTimeout(150);
 };
@@ -53,35 +70,34 @@ const setExpected = async (text) => {
 const markOf = async (name) =>
   (await rowFor(name).locator("span[aria-label]").first().getAttribute("aria-label")) ?? "";
 
-// --- small files, every algorithm ----------------------------------------
+// --- small files ---------------------------------------------------------
 await drop("alpha.txt", "beta.bin", "empty.dat");
 check("sha256 of a text file", (await hashOf("alpha.txt")) === M["alpha.txt"].sha256);
 check("sha256 of binary bytes", (await hashOf("beta.bin")) === M["beta.bin"].sha256);
 check("sha256 of an empty file", (await hashOf("empty.dat")) === M["empty.dat"].sha256);
 
-for (const [label, key] of [["SHA-1", "sha1"], ["SHA-512", "sha512"], ["MD5", "md5"]]) {
-  await page.selectOption('select[aria-label="Hash algorithm"]', { label: `${label}${key === "sha1" || key === "md5" ? " (weak)" : ""}` });
-  check(`${label} matches node:crypto`, (await hashOf("alpha.txt")) === M["alpha.txt"][key]);
+// --- every algorithm, from one pass over the file ------------------------
+const row = await openRow("alpha.txt");
+const shown = await row.locator(".font-mono").evaluateAll((els) =>
+  els.map((el) => el.getAttribute("title")),
+);
+for (const key of ["sha256", "sha1", "sha384", "sha512", "md5"]) {
+  check(`${key} matches node:crypto`, shown.includes(M["alpha.txt"][key]));
 }
-await page.selectOption('select[aria-label="Hash algorithm"]', { label: "SHA-256" });
-check("switching back re-hashes", (await hashOf("alpha.txt")) === M["alpha.txt"].sha256);
+await row.locator("div").first().click();
 
 // --- verification against a single pasted hash ---------------------------
 await setExpected(M["alpha.txt"].sha256);
 check("pasted hash marks the right file", (await markOf("alpha.txt")).includes("Matches"));
 check("pasted hash marks the others", (await markOf("beta.bin")).includes("not match"));
 
-// --- auto-switch from the pasted hash ------------------------------------
+// --- a pasted hash of any algorithm finds its own lane -------------------
 await setExpected(M["alpha.txt"].md5);
-await page.waitForTimeout(400);
-check(
-  "an MD5 paste switches the algorithm",
-  (await page.inputValue('select[aria-label="Hash algorithm"]')) === "md5",
-);
-check("and then matches", (await markOf("alpha.txt")).includes("Matches"));
+check("an MD5 paste matches without a picker", (await markOf("alpha.txt")).includes("Matches"));
+await setExpected(M["alpha.txt"].sha512);
+check("a SHA-512 paste matches too", (await markOf("alpha.txt")).includes("Matches"));
 
 await setExpected("");
-await page.selectOption('select[aria-label="Hash algorithm"]', { label: "SHA-256" });
 await page.click('button:has-text("clear")');
 
 // --- a real checksum list ------------------------------------------------
@@ -111,8 +127,8 @@ await setExpected("");
 
 // --- duplicates ----------------------------------------------------------
 check(
-  "identical files carry a duplicate tag",
-  (await page.locator("text=duplicate").count()) === 2,
+  "identical files are called out",
+  (await page.locator("text=holds the same bytes").count()) === 2,
 );
 
 // --- exports -------------------------------------------------------------
@@ -130,13 +146,22 @@ check(
   txt.split("\n")[0],
 );
 const json = JSON.parse(await grab(() => page.click('button:has-text(".json")')));
-check("the .json export names the algorithm", json.algorithm === "sha256");
 check("the .json export carries every file", json.files.length === 3);
+check(
+  "the .json export carries all five hashes",
+  json.files.every((f) => Object.keys(f.hashes).length === 5) &&
+    json.files.find((f) => f.path === "alpha.txt").hashes.md5 === M["alpha.txt"].md5,
+);
 const csv = await grab(() => page.click('button:has-text(".csv")'));
-check("the .csv export has a header", csv.split("\n")[0] === "path,size_bytes,sha256,expected,result");
+check(
+  "the .csv export has a column per algorithm",
+  csv.split("\n")[0] === "path,size_bytes,sha256,sha1,sha384,sha512,md5,expected,result",
+  csv.split("\n")[0],
+);
 
 // --- folders -------------------------------------------------------------
 await page.click('button:has-text("clear")');
+await toFiles();
 await page.setInputFiles('input[type="file"]', [
   fx("nested", "one.txt"),
   fx("nested", "inner", "two.txt"),
@@ -148,6 +173,7 @@ check("a nested file hashes", (await hashOf("two.txt")) === M["nested/inner/two.
 // 40 copies of a 4 MB file: 160 MB spread across the pool, enough that a blocked main
 // thread or a shared-state bug in the worker shows up.
 await page.click('button:has-text("clear")');
+await toFiles();
 const COPIES = 40;
 const t0 = Date.now();
 await page.setInputFiles(
@@ -156,28 +182,30 @@ await page.setInputFiles(
 );
 await page.locator(`li:has-text("medium.bin")`).nth(COPIES - 1).waitFor({ timeout: 120000 });
 await page.waitForFunction(
-  (n) => document.querySelectorAll('[role="progressbar"]').length === 0 &&
-    document.querySelectorAll("li").length === n,
+  (n) =>
+    document.querySelectorAll("li").length === n &&
+    document.querySelectorAll("li .font-mono").length === n,
   COPIES,
-  { timeout: 180000 },
+  { timeout: 300000 },
 );
-const hashes = await page.locator("li .font-mono").allInnerTexts();
+const hashes = await page
+  .locator("li .font-mono")
+  .evaluateAll((els) => els.map((el) => el.getAttribute("title")));
 check(`all ${COPIES} concurrent files hash`, hashes.length === COPIES);
 check(
   "every concurrent hash is correct",
-  hashes.every((h) => h.trim() === M["medium.bin"].sha256),
-  `${new Set(hashes.map((h) => h.trim())).size} distinct results`,
+  hashes.every((h) => h === M["medium.bin"].sha256),
+  `${new Set(hashes).size} distinct results`,
 );
 console.log(`       ${COPIES} × 4 MB in ${Date.now() - t0} ms`);
 
 // The page still answers while that ran, which is the point of the worker pool.
-await page.fill("#expected", M["medium.bin"].sha256);
-await page.waitForTimeout(200);
+await setExpected(M["medium.bin"].sha256);
 check(
   "the page stayed interactive",
   (await page.locator('span[aria-label="Matches the expected hash"]').count()) === COPIES,
 );
-await page.fill("#expected", "");
+await setExpected("");
 
 // --- the large file ------------------------------------------------------
 await page.click('button:has-text("clear")');
@@ -192,9 +220,52 @@ console.log(`       big.bin in ${Date.now() - t1} ms`);
 // --- cancel --------------------------------------------------------------
 await page.click('button:has-text("clear")');
 await drop("big.bin");
-await page.locator('button:has-text("cancel")').first().click();
+await page.locator('button:has-text("stop")').first().click();
 await page.locator("text=Cancelled.").waitFor({ timeout: 20000 });
 check("cancel stops a running file", true);
+
+// --- the fixed panel and the uniform rows --------------------------------
+await page.click('button:has-text("clear")');
+await drop("alpha.txt", "beta.bin", "twin.txt", "nested/one.txt");
+await hashOf("one.txt");
+const heights = await page
+  .locator("li > div:first-child")
+  .evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().height)));
+check(
+  "every row is the same height",
+  new Set(heights).size === 1,
+  `${[...new Set(heights)].join(", ")}px`,
+);
+const panel = await page
+  .locator('section[aria-label="Results"]')
+  .evaluate((el) => ({ h: el.clientHeight, scroll: el.scrollHeight }));
+check("the results panel holds a fixed height", panel.h > 300 && panel.h < 400, `${panel.h}px`);
+
+// --- the FAQ opens one section at a time ---------------------------------
+check("the FAQ starts closed", (await page.locator("details[open]").count()) === 0);
+await page.locator("details summary").first().click();
+check("a FAQ section opens", (await page.locator("details[open]").count()) === 1);
+await page.locator("details summary").first().click();
+
+// --- the copy icons ------------------------------------------------------
+await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+const alphaRow = rowFor("alpha.txt");
+await alphaRow.locator('button[aria-label="Copy SHA-256"]').click();
+check(
+  "the hash copy icon copies the hash",
+  (await page.evaluate(() => navigator.clipboard.readText())) === M["alpha.txt"].sha256,
+);
+await alphaRow.locator('button[aria-label="Copy file name"]').click();
+check(
+  "the name copy icon copies the name",
+  (await page.evaluate(() => navigator.clipboard.readText())) === "alpha.txt",
+);
+const opened = await openRow("alpha.txt");
+await opened.locator('button[aria-label="Copy MD5"]').click();
+check(
+  "an opened row copies any algorithm",
+  (await page.evaluate(() => navigator.clipboard.readText())) === M["alpha.txt"].md5,
+);
 
 // --- privacy -------------------------------------------------------------
 const offsite = requests.filter((r) => !r.url.startsWith(BASE));
@@ -241,6 +312,14 @@ await page.context().setOffline(false);
 // --- both themes ---------------------------------------------------------
 const shots = path.join(here, "..", "shots");
 fs.mkdirSync(shots, { recursive: true });
+// Fill the panel first, so the screenshots show a real working state.
+await page.context().setOffline(false);
+await page.click('button:has-text("clear")');
+await drop("alpha.txt", "beta.bin", "twin.txt", "empty.dat", "nested/one.txt");
+await hashOf("one.txt");
+await setExpected(fs.readFileSync(fx("SHA256SUMS"), "utf8"));
+await toFiles();
+await openRow("beta.bin");
 for (const scheme of ["dark", "light"]) {
   await page.emulateMedia({ colorScheme: scheme });
   await page.waitForTimeout(150);

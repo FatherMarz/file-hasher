@@ -19,28 +19,42 @@ supply chain work and release verification.
 
 ## The screen
 
-A single column that scrolls.
+A single column. A tab switches the input panel between the drop zone and the paste box,
+so only one of them takes up room.
 
 ```
-┌────────────────────────────────────┐
-│ File Hasher             SHA-256 ▾  │
-│ Nothing leaves your computer.      │
-├────────────────────────────────────┤
-│                                    │
-│      drop files or folders         │
-│                                    │
-├────────────────────────────────────┤
-│ expected hash  [                 ] │
-├────────────────────────────────────┤
-│ ✓ installer.dmg   412 MB  a94f2c…  │
-│ ✗ patch.zip       2.1 MB  77bb01…  │
-│ ⋯ bundle.tar.gz   1.8 GB  ▓▓▓░ 61% │
-├────────────────────────────────────┤
-│ 3 files · 2.2 GB      copy   save  │
-├────────────────────────────────────┤
-│ FAQ                                │
-└────────────────────────────────────┘
+┌────────────────────────────────────────┐
+│ File Hasher                            │
+│ Nothing leaves your computer.          │
+├────────────────────────────────────────┤
+│ [Files] Expected hash                  │
+│ ┌────────────────────────────────────┐ │
+│ │      drop files or folders         │ │
+│ └────────────────────────────────────┘ │
+├────────────────────────────────────────┤
+│ ✓ ▸ installer.dmg  ⧉  412 MB a94f2c… ⧉ │
+│ ✓ ▾ patch.zip      ⧉  2.1 MB 77bb01… ⧉ │
+│      SHA-256  77bb01…c0fe            ⧉ │
+│      SHA-1    0e38dc…9217       weak ⧉ │
+│      SHA-384  bcd6e1…8fc7            ⧉ │
+│      SHA-512  6d8703…60e2            ⧉ │
+│      MD5      7e3979…1dd3       weak ⧉ │
+│ · ▸ bundle.tar.gz  ⧉  ▓▓▓░ 61%    stop │
+├────────────────────────────────────────┤
+│ 3 files · 2.2 GB    copy .txt .csv ... │
+├────────────────────────────────────────┤
+│ FAQ                                    │
+│ ▸ What is a hash?                      │
+└────────────────────────────────────────┘
 ```
+
+The results panel holds a fixed height and scrolls inside itself. Every row is the same
+height. Long names and hashes cut off with an ellipsis rather than wrap.
+
+Each value carries its own copy icon: one for the file name, one for the row's SHA-256,
+and one for every hash inside an open row.
+
+The FAQ sits in a closed list. Each question opens on its own.
 
 The theme follows the machine. Dark on a dark system, light on a light one.
 
@@ -57,11 +71,12 @@ The theme follows the machine. Dark on a dark system, light on a light one.
 
 ## Algorithms
 
-One at a time, chosen from a dropdown: SHA-256 (default), SHA-1, SHA-384, SHA-512, MD5.
+Every file gets SHA-256, SHA-1, SHA-384, SHA-512 and MD5. There is no picker. One read of
+the file feeds all five hashers, so the disk work happens once.
+
+The closed row shows SHA-256. Open the row for the other four.
 
 MD5 and SHA-1 carry a short note. They are weak. Use them for checksums only.
-
-If you change the algorithm, the tool re-hashes the files on screen.
 
 ## Verification
 
@@ -69,20 +84,21 @@ One paste box. It accepts a single hash, or a whole checksum file in the `<hash>
 form that `sha256sum` writes. The tool works out which one it got.
 
 - Case does not matter.
-- If the pasted hash needs a different algorithm, the tool switches and tells you.
-- A green check means match. A red cross means no match. A grey dash means there was
+- The length of the pasted hash names its algorithm, and the tool checks against that one.
+- A green check means match. A red cross means no match. A grey dot means there was
   nothing to compare.
+- Inside an open row, the hash that matched turns green.
 - If a pasted list names a file you did not drop, the tool says which one is missing.
 
 ## Duplicates
 
-Two files with the same hash both get a small duplicate tag.
+If two files hold the same bytes, each one says so under its row.
 
 ## Output
 
-- Copy one hash with one click.
+- Copy any single value with the icon beside it.
 - Copy all rows as plain text in `sha256sum` format.
-- Save as `.txt`, `.csv`, or `.json`.
+- Save as `.txt` (SHA-256), or as `.csv` or `.json` with all five hashes per file.
 
 ## FAQ (on the page, below the tool)
 
