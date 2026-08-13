@@ -1,0 +1,89 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Tundra, the modul4r house palette. Dark is the primary; light is the same hues
+     inverted so the tool still reads on a bright system. */
+  :root {
+    --bg: 36 39 33;
+    --surface: 52 56 47;
+    --surface-alt: 66 71 59;
+    --text: 232 229 217;
+    --text-muted: 160 158 143;
+    --border: 94 99 83;
+    --accent: 214 156 74;
+    --accent-fg: 26 28 23;
+    --ok: 138 176 96;
+    --bad: 214 106 90;
+    color-scheme: dark;
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: 247 246 241;
+      --surface: 255 255 255;
+      --surface-alt: 238 236 228;
+      --text: 36 39 33;
+      --text-muted: 106 110 96;
+      --border: 209 206 194;
+      --accent: 166 112 30;
+      --accent-fg: 255 255 255;
+      --ok: 74 118 45;
+      --bad: 176 52 38;
+      color-scheme: light;
+    }
+  }
+
+  html,
+  body,
+  #root {
+    @apply min-h-dvh;
+  }
+
+  body {
+    background-color: rgb(var(--bg));
+    color: rgb(var(--text));
+    font-family: theme("fontFamily.sans");
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button,
+  a,
+  label,
+  [role="button"] {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* iOS Safari zooms the page when a control under 16px takes focus. */
+  @media (max-width: 767px) {
+    select,
+    textarea,
+    input[type="text"] {
+      font-size: 16px;
+    }
+  }
+
+  ::selection {
+    background-color: rgb(var(--accent));
+    color: rgb(var(--accent-fg));
+  }
+
+  :focus-visible {
+    outline: 2px solid rgb(var(--accent));
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-lg border border-border bg-surface;
+  }
+
+  .btn {
+    @apply rounded-md border border-border bg-surface-alt px-3 py-1.5 text-sm
+           text-text transition-colors hover:border-accent hover:text-accent
+           disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-border
+           disabled:hover:text-text;
+  }
+}
