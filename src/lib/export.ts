@@ -1,26 +1,36 @@
-import { ALGO_META, type Algo } from "./algorithms";
+import { ALGOS, ALGO_META, DEFAULT_ALGO } from "./algorithms";
 import type { Entry } from "../stores/hashStore";
 import type { MatchState } from "./expected";
 
-export type Row = { entry: Entry; state: MatchState; want: string | null };
+export type Row = {
+  entry: Entry;
+  state: MatchState;
+  want: string | null;
+};
 
-const done = (rows: Row[]) => rows.filter((r) => r.entry.hash);
+const done = (rows: Row[]) => rows.filter((r) => r.entry.hashes);
 
 /** The `sha256sum` output format, so the text pastes straight into `-c`. */
 export function toText(rows: Row[]): string {
   return done(rows)
-    .map((r) => `${r.entry.hash}  ${r.entry.path}`)
+    .map((r) => `${r.entry.hashes![DEFAULT_ALGO]}  ${r.entry.path}`)
     .join("\n");
 }
 
-export function toCsv(rows: Row[], algo: Algo): string {
+export function toCsv(rows: Row[]): string {
   const esc = (v: string) => (/[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
-  const head = ["path", "size_bytes", ALGO_META[algo].ext, "expected", "result"];
+  const head = [
+    "path",
+    "size_bytes",
+    ...ALGOS.map((a) => ALGO_META[a].ext),
+    "expected",
+    "result",
+  ];
   const body = done(rows).map((r) =>
     [
       esc(r.entry.path),
       String(r.entry.size),
-      r.entry.hash ?? "",
+      ...ALGOS.map((a) => r.entry.hashes![a]),
       r.want ?? "",
       r.state === "none" ? "" : r.state,
     ].join(","),
@@ -28,14 +38,13 @@ export function toCsv(rows: Row[], algo: Algo): string {
   return [head.join(","), ...body].join("\n");
 }
 
-export function toJson(rows: Row[], algo: Algo): string {
+export function toJson(rows: Row[]): string {
   return JSON.stringify(
     {
-      algorithm: ALGO_META[algo].ext,
       files: done(rows).map((r) => ({
         path: r.entry.path,
         size: r.entry.size,
-        hash: r.entry.hash,
+        hashes: r.entry.hashes,
         expected: r.want,
         result: r.state === "none" ? null : r.state,
       })),

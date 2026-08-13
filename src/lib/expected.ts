@@ -1,4 +1,5 @@
-import { algoFromHexLength, type Algo } from "./algorithms";
+import { ALGOS, algoFromHexLength, type Algo } from "./algorithms";
+import type { Digests } from "./protocol";
 
 export type Expected =
   /** A bare hash. Every file gets checked against it. */
@@ -65,24 +66,39 @@ export function parseExpected(raw: string): Expected {
 
 export type MatchState = "match" | "mismatch" | "none";
 
+export type Match = {
+  state: MatchState;
+  want: string | null;
+  /** Which algorithm the expected hash turned out to be. */
+  algo: Algo | null;
+};
+
+/** Every algorithm runs on every file, so the pasted hash picks its own lane. */
+function compare(hashes: Digests, want: string): Match {
+  const algo = algoFromHexLength(want.length);
+  if (algo) {
+    return { state: hashes[algo] === want ? "match" : "mismatch", want, algo };
+  }
+  const hit = ALGOS.find((a) => hashes[a] === want) ?? null;
+  return { state: hit ? "match" : "mismatch", want, algo: hit };
+}
+
 export function matchFor(
   expected: Expected,
   name: string,
-  hash: string | null,
-): { state: MatchState; want: string | null } {
-  if (!hash) return { state: "none", want: null };
+  hashes: Digests | null,
+): Match {
+  if (!hashes) return { state: "none", want: null, algo: null };
 
-  if (expected.kind === "single") {
-    return { state: expected.hash === hash ? "match" : "mismatch", want: expected.hash };
-  }
+  if (expected.kind === "single") return compare(hashes, expected.hash);
 
   if (expected.kind === "list") {
     const want = expected.entries.get(baseName(name));
-    if (!want) return { state: "none", want: null };
-    return { state: want === hash ? "match" : "mismatch", want };
+    if (!want) return { state: "none", want: null, algo: null };
+    return compare(hashes, want);
   }
 
-  return { state: "none", want: null };
+  return { state: "none", want: null, algo: null };
 }
 
 /** Names in a pasted list that never showed up in the drop. */

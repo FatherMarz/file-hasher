@@ -47,9 +47,8 @@ const ITEMS: { q: string; a: React.ReactNode }[] = [
     q: "Which algorithm do I want?",
     a: (
       <>
-        SHA-256, unless the publisher gave you something else. Pick the algorithm that
-        matches the hash you check against. If you paste a hash, this tool switches for
-        you.
+        You get all five at once, so you never pick. The row shows SHA-256. Open a row
+        to see SHA-1, SHA-384, SHA-512 and MD5. A pasted hash finds its own algorithm.
       </>
     ),
   },
@@ -67,9 +66,8 @@ const ITEMS: { q: string; a: React.ReactNode }[] = [
     q: "Why is my hash different from the one on the website?",
     a: (
       <>
-        First check that you picked the same algorithm. If you did, the file you hold is
-        not the file they published. Download it again from the official source. If the
-        hash still differs, do not run the file.
+        The file you hold is not the file they published. Download it again from the
+        official source. If the hash still differs, do not run the file.
       </>
     ),
   },
@@ -84,28 +82,33 @@ const ITEMS: { q: string; a: React.ReactNode }[] = [
   },
   {
     q: "Does it work offline?",
-    a: (
-      <>
-        Yes. Load the page once. After that it opens and runs with the network off.
-      </>
-    ),
+    a: <>Yes. Load the page once. After that it opens and runs with the network off.</>,
   },
 ];
 
 export function Faq() {
   return (
-    <section className="pt-4">
-      <h2 className="mb-3 text-sm uppercase tracking-wider text-text-muted">FAQ</h2>
-      <dl className="space-y-4">
+    <section className="pt-2">
+      <h2 className="mb-2 text-sm uppercase tracking-wider text-text-muted">FAQ</h2>
+      <div className="divide-y divide-border rounded-lg border border-border">
         {ITEMS.map((item) => (
-          <div key={item.q}>
-            <dt className="text-sm font-semibold">{item.q}</dt>
-            <dd className="mt-1 max-w-2xl text-sm leading-relaxed text-text-muted">
+          <details key={item.q} className="group">
+            <summary
+              className="flex cursor-pointer list-none items-center gap-2 px-3 py-2
+                         text-sm hover:text-accent"
+            >
+              <span className="w-3 text-xs text-text-muted group-open:hidden">▸</span>
+              <span className="hidden w-3 text-xs text-text-muted group-open:inline">
+                ▾
+              </span>
+              {item.q}
+            </summary>
+            <p className="max-w-2xl px-8 pb-3 text-sm leading-relaxed text-text-muted">
               {item.a}
-            </dd>
-          </div>
+            </p>
+          </details>
         ))}
-      </dl>
+      </div>
     </section>
   );
 }

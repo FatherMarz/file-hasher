@@ -7,8 +7,8 @@ import {
   createSHA512,
   type IHasher,
 } from "hash-wasm";
-import type { Algo } from "../lib/algorithms";
-import type { WorkerRequest, WorkerResponse } from "../lib/protocol";
+import { ALGOS, type Algo } from "../lib/algorithms";
+import type { Digests, WorkerRequest, WorkerResponse } from "../lib/protocol";
 
 /** 8 MiB. Big enough that the per-chunk overhead disappears, small enough that a
  *  cancel lands quickly and the tab never holds much of a large file at once. */
@@ -23,17 +23,22 @@ const FACTORIES: Record<Algo, () => Promise<IHasher>> = {
   md5: createMD5,
 };
 
-/** WASM instances are expensive to build and safe to reuse after init(). */
+/** WASM instances are expensive to build and safe to reuse after init(). Every
+ *  algorithm runs against the same chunk, so a file is read from disk exactly once. */
 const hashers = new Map<Algo, IHasher>();
 
-async function getHasher(algo: Algo): Promise<IHasher> {
-  let h = hashers.get(algo);
-  if (!h) {
-    h = await FACTORIES[algo]();
-    hashers.set(algo, h);
+async function getHashers(): Promise<Record<Algo, IHasher>> {
+  const out = {} as Record<Algo, IHasher>;
+  for (const algo of ALGOS) {
+    let h = hashers.get(algo);
+    if (!h) {
+      h = await FACTORIES[algo]();
+      hashers.set(algo, h);
+    }
+    h.init();
+    out[algo] = h;
   }
-  h.init();
-  return h;
+  return out;
 }
 
 const cancelled = new Set<string>();
@@ -42,9 +47,9 @@ function post(msg: WorkerResponse) {
   self.postMessage(msg);
 }
 
-async function run(id: string, file: File, algo: Algo) {
+async function run(id: string, file: File) {
   const started = performance.now();
-  const hasher = await getHasher(algo);
+  const active = await getHashers();
 
   let offset = 0;
   let lastPost = 0;
@@ -57,8 +62,8 @@ async function run(id: string, file: File, algo: Algo) {
     }
 
     const end = Math.min(offset + CHUNK, file.size);
-    const buf = await file.slice(offset, end).arrayBuffer();
-    hasher.update(new Uint8Array(buf));
+    const bytes = new Uint8Array(await file.slice(offset, end).arrayBuffer());
+    for (const algo of ALGOS) active[algo].update(bytes);
     offset = end;
 
     const now = performance.now();
@@ -68,12 +73,10 @@ async function run(id: string, file: File, algo: Algo) {
     }
   }
 
-  post({
-    type: "done",
-    id,
-    hash: hasher.digest("hex") as string,
-    ms: performance.now() - started,
-  });
+  const hashes = {} as Digests;
+  for (const algo of ALGOS) hashes[algo] = active[algo].digest("hex") as string;
+
+  post({ type: "done", id, hashes, ms: performance.now() - started });
 }
 
 self.onmessage = async (e: MessageEvent<WorkerRequest>) => {
@@ -85,7 +88,7 @@ self.onmessage = async (e: MessageEvent<WorkerRequest>) => {
   }
 
   try {
-    await run(msg.id, msg.file, msg.algo);
+    await run(msg.id, msg.file);
   } catch (err) {
     post({
       type: "error",

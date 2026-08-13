@@ -1,8 +1,11 @@
 import { create } from "zustand";
-import { DEFAULT_ALGO, type Algo } from "../lib/algorithms";
 import { HashPool } from "../lib/pool";
+import type { Digests } from "../lib/protocol";
 
 export type Status = "queued" | "hashing" | "done" | "cancelled" | "error";
+
+/** Which half of the input panel is showing. */
+export type InputMode = "files" | "expected";
 
 export type Entry = {
   id: string;
@@ -13,21 +16,20 @@ export type Entry = {
   file: File;
   status: Status;
   bytesRead: number;
-  hash: string | null;
+  hashes: Digests | null;
   ms: number;
   error: string | null;
 };
 
 type State = {
   entries: Entry[];
-  algo: Algo;
   expectedText: string;
-  /** Set when a pasted hash forced the algorithm to change. */
-  algoNote: string | null;
+  inputMode: InputMode;
+  openIds: Set<string>;
   addFiles: (picked: { file: File; path: string }[]) => void;
-  setAlgo: (algo: Algo, note?: string) => void;
   setExpectedText: (text: string) => void;
-  dismissNote: () => void;
+  setInputMode: (mode: InputMode) => void;
+  toggleOpen: (id: string) => void;
   cancel: (id: string) => void;
   remove: (id: string) => void;
   clear: () => void;
@@ -41,12 +43,12 @@ function getPool(): HashPool {
   pool = new HashPool({
     onProgress: (id, bytesRead) =>
       patch(id, (e) => ({ ...e, status: "hashing", bytesRead })),
-    onDone: (id, hash, ms) =>
-      patch(id, (e) => ({ ...e, status: "done", hash, ms, bytesRead: e.size })),
+    onDone: (id, hashes, ms) =>
+      patch(id, (e) => ({ ...e, status: "done", hashes, ms, bytesRead: e.size })),
     onCancelled: (id) =>
-      patch(id, (e) => ({ ...e, status: "cancelled", bytesRead: 0, hash: null })),
+      patch(id, (e) => ({ ...e, status: "cancelled", bytesRead: 0, hashes: null })),
     onError: (id, message) =>
-      patch(id, (e) => ({ ...e, status: "error", error: message, hash: null })),
+      patch(id, (e) => ({ ...e, status: "error", error: message, hashes: null })),
   });
   return pool;
 }
@@ -61,15 +63,14 @@ function patch(id: string, fn: (e: Entry) => Entry) {
   });
 }
 
-export const useHashStore = create<State>((set, get) => ({
+export const useHashStore = create<State>((set) => ({
   entries: [],
-  algo: DEFAULT_ALGO,
   expectedText: "",
-  algoNote: null,
+  inputMode: "files",
+  openIds: new Set(),
 
   addFiles: (picked) => {
     if (picked.length === 0) return;
-    const algo = get().algo;
     const added: Entry[] = picked.map(({ file, path }) => ({
       id: `f${seq++}`,
       path,
@@ -78,38 +79,25 @@ export const useHashStore = create<State>((set, get) => ({
       file,
       status: "queued",
       bytesRead: 0,
-      hash: null,
+      hashes: null,
       ms: 0,
       error: null,
     }));
     set((s) => ({ entries: [...s.entries, ...added] }));
-    for (const e of added) getPool().submit({ id: e.id, file: e.file, algo });
-  },
-
-  setAlgo: (algo, note) => {
-    if (algo === get().algo) {
-      if (note) set({ algoNote: note });
-      return;
-    }
-    getPool().cancelAll();
-    set((s) => ({
-      algo,
-      algoNote: note ?? null,
-      entries: s.entries.map((e) => ({
-        ...e,
-        status: "queued",
-        bytesRead: 0,
-        hash: null,
-        ms: 0,
-        error: null,
-      })),
-    }));
-    for (const e of get().entries) getPool().submit({ id: e.id, file: e.file, algo });
+    for (const e of added) getPool().submit({ id: e.id, file: e.file });
   },
 
   setExpectedText: (expectedText) => set({ expectedText }),
 
-  dismissNote: () => set({ algoNote: null }),
+  setInputMode: (inputMode) => set({ inputMode }),
+
+  toggleOpen: (id) =>
+    set((s) => {
+      const next = new Set(s.openIds);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return { openIds: next };
+    }),
 
   cancel: (id) => getPool().cancel(id),
 
@@ -120,18 +108,19 @@ export const useHashStore = create<State>((set, get) => ({
 
   clear: () => {
     getPool().cancelAll();
-    set({ entries: [], expectedText: "", algoNote: null });
+    set({ entries: [], openIds: new Set() });
   },
 }));
 
-/** Hashes that more than one file produced. */
+/** SHA-256 values that more than one file produced. */
 export function duplicateHashes(entries: Entry[]): Set<string> {
   const seen = new Set<string>();
   const dupes = new Set<string>();
   for (const e of entries) {
-    if (!e.hash) continue;
-    if (seen.has(e.hash)) dupes.add(e.hash);
-    seen.add(e.hash);
+    const h = e.hashes?.sha256;
+    if (!h) continue;
+    if (seen.has(h)) dupes.add(h);
+    seen.add(h);
   }
   return dupes;
 }
