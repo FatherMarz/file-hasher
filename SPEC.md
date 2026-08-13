@@ -35,9 +35,9 @@ so only one of them takes up room.
 │ ✓ ▸ installer.dmg  ⧉  412 MB a94f2c… ⧉ │
 │ ✓ ▾ patch.zip      ⧉  2.1 MB 77bb01… ⧉ │
 │      SHA-256  77bb01…c0fe            ⧉ │
-│      SHA-1    0e38dc…9217       weak ⧉ │
 │      SHA-384  bcd6e1…8fc7            ⧉ │
 │      SHA-512  6d8703…60e2            ⧉ │
+│      SHA-1    0e38dc…9217       weak ⧉ │
 │      MD5      7e3979…1dd3       weak ⧉ │
 │ · ▸ bundle.tar.gz  ⧉  ▓▓▓░ 61%    stop │
 ├────────────────────────────────────────┤
@@ -71,10 +71,11 @@ The theme follows the machine. Dark on a dark system, light on a light one.
 
 ## Algorithms
 
-Every file gets SHA-256, SHA-1, SHA-384, SHA-512 and MD5. There is no picker. One read of
-the file feeds all five hashers, so the disk work happens once.
+Every file gets SHA-256, SHA-384, SHA-512, SHA-1 and MD5, in that order. There is no
+picker. One read of the file feeds all five hashers, so the disk work happens once.
 
-The closed row shows SHA-256. Open the row for the other four.
+The closed row shows SHA-256. Open the row for the other four. SHA-1 and MD5 sit last,
+because they are the weak pair.
 
 MD5 and SHA-1 carry a short note. They are weak. Use them for checksums only.
 

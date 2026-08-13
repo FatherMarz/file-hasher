@@ -1,4 +1,5 @@
-export const ALGOS = ["sha256", "sha1", "sha384", "sha512", "md5"] as const;
+/** Display order. The strong ones lead. The two weak ones sit at the end. */
+export const ALGOS = ["sha256", "sha384", "sha512", "sha1", "md5"] as const;
 
 export type Algo = (typeof ALGOS)[number];
 
@@ -13,9 +14,9 @@ type AlgoMeta = {
 
 export const ALGO_META: Record<Algo, AlgoMeta> = {
   sha256: { label: "SHA-256", hexLength: 64, ext: "sha256", weak: false },
-  sha1: { label: "SHA-1", hexLength: 40, ext: "sha1", weak: true },
   sha384: { label: "SHA-384", hexLength: 96, ext: "sha384", weak: false },
   sha512: { label: "SHA-512", hexLength: 128, ext: "sha512", weak: false },
+  sha1: { label: "SHA-1", hexLength: 40, ext: "sha1", weak: true },
   md5: { label: "MD5", hexLength: 32, ext: "md5", weak: true },
 };
 
