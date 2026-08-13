@@ -246,7 +246,16 @@ for (const scheme of ["dark", "light"]) {
   await page.waitForTimeout(150);
   await page.screenshot({ path: path.join(shots, `${scheme}.png`), fullPage: true });
 }
-check("screenshots written for both themes", true);
+await page.emulateMedia({ colorScheme: "dark" });
+await page.setViewportSize({ width: 390, height: 844 });
+await page.waitForTimeout(150);
+await page.screenshot({ path: path.join(shots, "phone.png"), fullPage: true });
+// Nothing may spill past the viewport on a phone.
+const overflow = await page.evaluate(
+  () => document.documentElement.scrollWidth - window.innerWidth,
+);
+check("the layout fits a phone", overflow <= 0, `${overflow}px of overflow`);
+await page.setViewportSize({ width: 1200, height: 900 });
 
 await browser.close();
 console.log(failures === 0 ? "\nall checks passed" : `\n${failures} failed`);
