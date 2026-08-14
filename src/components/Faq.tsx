@@ -11,12 +11,11 @@ const ITEMS: { q: string; a: React.ReactNode }[] = [
     ),
   },
   {
-    q: "Why do I check one?",
+    q: "Why check one?",
     a: (
       <>
-        A download can arrive damaged, or someone can swap it for a different file. The
-        publisher posts the hash of the correct file. If your hash matches theirs, you
-        hold the right file.
+        A download can arrive damaged, and an attacker can swap it. The publisher posts
+        the fingerprint of the real file. If yours matches, you hold the same bytes.
       </>
     ),
   },
@@ -24,17 +23,16 @@ const ITEMS: { q: string; a: React.ReactNode }[] = [
     q: "Where does my file go?",
     a: (
       <>
-        Nowhere. The file stays in your browser. This page makes no network calls after
-        it loads.
+        Nowhere. The hashing runs inside your browser. The page makes no network calls
+        once it loads, and it never reads the file anywhere else.
       </>
     ),
   },
   {
-    q: "How do I know you are telling the truth?",
+    q: "How do I know that is true?",
     a: (
       <>
-        Open the network tab in your browser and hash a file. You will see no requests.
-        The source code is public at{" "}
+        Open the network tab and hash a file. No requests fire. The source is public at{" "}
         <a href={REPO} className="text-accent underline">
           github.com/FatherMarz/file-hasher
         </a>
@@ -43,11 +41,11 @@ const ITEMS: { q: string; a: React.ReactNode }[] = [
     ),
   },
   {
-    q: "Which algorithm do I want?",
+    q: "Which algorithm do I use?",
     a: (
       <>
-        You get all five at once, so you never pick. The row shows SHA-256. Open a row
-        to see SHA-1, SHA-384, SHA-512 and MD5. A pasted hash finds its own algorithm.
+        Whichever one the publisher gave you. You get all five from a single read, so
+        you never choose up front. A pasted hash finds its own algorithm.
       </>
     ),
   },
@@ -61,26 +59,32 @@ const ITEMS: { q: string; a: React.ReactNode }[] = [
     ),
   },
   {
-    q: "Why is my hash different from the one on the website?",
+    q: "My hash does not match the one on the site. Now what?",
     a: (
       <>
-        The file you hold is not the file they published. Download it again from the
-        official source. If the hash still differs, do not run the file.
+        The bytes you hold are not the bytes they published. An interrupted download, a
+        mirror serving another build, or a new release against an old hash all cause it.
+        Download again from the source. If it still differs, do not run the file.
       </>
     ),
   },
   {
-    q: "How big a file can I do?",
+    q: "How big a file can I hash?",
     a: (
       <>
-        There is no limit. The tool reads a large file in pieces, so the browser holds
-        one piece at a time. A 5 GB file works.
+        Any size. The file reads in 8 MiB slices, so memory stays flat no matter how
+        large it gets. 5 GB is tested.
       </>
     ),
   },
   {
     q: "Does it work offline?",
-    a: <>Yes. Load the page once. After that it opens and runs with the network off.</>,
+    a: (
+      <>
+        Yes. The first visit caches the app. After that it opens with the network off,
+        which is one way to confirm nothing is uploaded.
+      </>
+    ),
   },
 ];
 
