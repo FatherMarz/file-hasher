@@ -104,16 +104,17 @@ If two files hold the same bytes, each one says so under its row.
 ## FAQ (on the page, below the tool)
 
 - What is a hash?
-- Why do I check one?
-- Where does my file go? (Nowhere. It stays in the browser.)
-- How do I know you are telling the truth? (Open the network tab. Read the source.)
-- Which algorithm do I want?
-- Why do you mark MD5 as weak?
-- Why is my hash different from the one on the website?
-- How big a file can I do?
+- Why check one?
+- Where does my file go?
+- How do I know that is true?
+- Which algorithm do I use?
+- Why do you mark MD5 and SHA-1 as weak?
+- My hash does not match the one on the site. Now what?
+- How big a file can I hash?
 - Does it work offline?
 
-Each answer runs to two or three plain sentences.
+Each answer runs to one or two sentences. Write for somebody competent who has not met
+this particular tool. Do not explain what a download is.
 
 ## Out of scope
 
