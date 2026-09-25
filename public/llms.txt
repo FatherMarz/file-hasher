@@ -1,0 +1,28 @@
+# File Hasher
+
+> File Hasher computes a file's checksum entirely inside your browser. Drop a
+> file, get its SHA-256, SHA-384, SHA-512, SHA-1 or MD5 digest, and check it
+> against a hash the publisher gave you. Nothing is uploaded.
+
+## What it does
+
+- Hashes one or more files with SHA-256, SHA-384, SHA-512, SHA-1 or MD5.
+- Paste an expected hash, or a full checksum list, and it marks each file as
+  matching, mismatched or missing.
+- Flags duplicate files that hash the same.
+- Exports results as plain text in the standard sha256sum format, CSV, or
+  JSON.
+
+## How it works
+
+Hashing runs in the browser using WebAssembly, in a background worker. Files
+never leave the computer, and there is no account, no server and no
+tracking.
+
+## Pages
+
+- [File Hasher](https://hash.modul4r.com/): drop a file and get its checksum.
+
+## Contact
+
+More tools at https://modul4r.com
