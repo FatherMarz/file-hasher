@@ -3,34 +3,34 @@
 @tailwind utilities;
 
 @layer base {
-  /* Tundra, the modul4r house palette. Dark is the primary; light is the same hues
-     inverted so the tool still reads on a bright system. */
+  /* File Hasher's own colours: cool slate, and one cobalt for the answer you
+     came for. Dark is the primary; light is the same hues for a bright system. */
   :root {
-    --bg: 36 39 33;
-    --surface: 52 56 47;
-    --surface-alt: 66 71 59;
-    --text: 232 229 217;
-    --text-muted: 160 158 143;
-    --border: 94 99 83;
-    --accent: 214 156 74;
-    --accent-fg: 26 28 23;
-    --ok: 138 176 96;
-    --bad: 214 106 90;
+    --bg: 16 20 25;
+    --surface: 25 31 39;
+    --surface-alt: 34 42 52;
+    --text: 229 235 241;
+    --text-muted: 142 154 168;
+    --border: 49 59 72;
+    --accent: 96 145 255;
+    --accent-fg: 8 16 36;
+    --ok: 74 201 138;
+    --bad: 240 110 110;
     color-scheme: dark;
   }
 
   @media (prefers-color-scheme: light) {
     :root {
-      --bg: 247 246 241;
+      --bg: 245 247 250;
       --surface: 255 255 255;
-      --surface-alt: 238 236 228;
-      --text: 36 39 33;
-      --text-muted: 106 110 96;
-      --border: 209 206 194;
-      --accent: 166 112 30;
+      --surface-alt: 234 239 245;
+      --text: 17 21 26;
+      --text-muted: 92 104 118;
+      --border: 209 217 227;
+      --accent: 30 90 214;
       --accent-fg: 255 255 255;
-      --ok: 74 118 45;
-      --bad: 176 52 38;
+      --ok: 20 128 72;
+      --bad: 196 48 48;
       color-scheme: light;
     }
   }
