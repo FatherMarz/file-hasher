@@ -47,7 +47,7 @@ npm run fixtures            # 300 MB large-file case
 npm run e2e
 ```
 
-The spec's 5 GB case needs a bigger fixture and about 5 GB of free disk:
+A 5 GB case needs a bigger fixture and about 5 GB of free disk:
 
 ```sh
 BIG_MB=5000 npm run fixtures && npm run e2e
@@ -59,3 +59,5 @@ screenshots of both themes to `shots/`.
 ## Licence
 
 AGPL-3.0-only. A [Modul4r](https://modul4r.com) tool.
+
+Built by Marcello Delcaro, AI-assisted.

@@ -3,7 +3,7 @@
 // implementation rather than against itself.
 //
 //   npm run fixtures            # 300 MB big file
-//   BIG_MB=5000 npm run fixtures  # the 5 GB case from the spec
+//   BIG_MB=5000 npm run fixtures  # 5 GB case
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
