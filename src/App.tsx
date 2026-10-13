@@ -41,7 +41,10 @@ export default function App() {
         <a href="https://modul4r.com" className="text-accent underline">
           Modul4r
         </a>{" "}
-        tool. No account, no upload, no tracking.
+        tool. No account, no upload, no tracking.{" "}
+        <button type="button" data-cookie-settings className="text-accent underline">
+          Cookie&nbsp;settings
+        </button>
       </footer>
     </div>
   );
